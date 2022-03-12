@@ -3,6 +3,29 @@ const { Client } = require('pg');
 const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:8675/fitness-dev';
 const activityClient = new Client(CONNECTION_STRING);
 
+// getActivityById(id)
+// return the activity
+
+
+
+// getAllActivities
+// select and return an array of all activities
+async function getAllActivities() {
+    try {
+        const { rows } = await client.query(`
+        SELECT *
+        FROM activities;
+        `);
+
+        return rows;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// createActivity({ name, description })
+// return the new activity
 async function createActivity({ name, description }) {
 
     try {
@@ -20,8 +43,15 @@ async function createActivity({ name, description }) {
 }
 
 
+// updateActivity({ id, name, description })
+// don't try to update the id
+// do update the name and description
+// return the updated activity
+
+
 
 module.exports = {
     activityClient,
-    createActivity
+    createActivity,
+    getAllActivities
 }
