@@ -5,6 +5,23 @@ const activityClient = new Client(CONNECTION_STRING);
 
 // getActivityById(id)
 // return the activity
+async function getActivityById(id) {
+    try {
+        const { rows: [activity] } = await client.query(`
+        SELECT *
+        FROM activities
+        WHERE id=${ id }
+      `);
+
+        if (!id) {
+            return null;
+        }
+
+        return activity;
+    } catch (error) {
+        throw error;
+    }
+}
 
 
 
@@ -47,11 +64,29 @@ async function createActivity({ name, description }) {
 // don't try to update the id
 // do update the name and description
 // return the updated activity
+async function updateActivity({ id, name, description }) {
+
+    try {
+        const { rows: [activity] } = await client.query(`
+        UPDATE activities
+        SET name=${ name },
+            description=${ description }
+        WHERE activityId=${ id }
+        RETURNING *;
+      `, [id, name, description]);
+
+        return activity;
+    } catch (error) {
+        throw error;
+    }
+}
 
 
 
 module.exports = {
     activityClient,
     createActivity,
-    getAllActivities
+    getAllActivities,
+    getActivityById,
+    updateActivity
 }

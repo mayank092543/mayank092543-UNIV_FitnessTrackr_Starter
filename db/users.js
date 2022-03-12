@@ -1,4 +1,5 @@
 const { Client } = require('pg');
+const bcrypt = require("bcrypt");
 
 const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:1108/fitness-dev';
 const userClient = new Client(CONNECTION_STRING);
