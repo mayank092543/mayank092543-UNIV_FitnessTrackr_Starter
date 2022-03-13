@@ -2,28 +2,35 @@ const express = require("express");
 const activitiesRouter = express.Router();
 
 const { requireUser } = require("./utils");
-const { getAllActivities, createActivity, updateActivity, getPublicRoutinesByActivity } = require("../db");
+const { getPublicRoutinesByActivity } = require("../db");
+const { getAllActivities, createActivity, updateActivity } = require("../db/activities");
+
 
 activitiesRouter.get("/", async(request, response, next) => {
+    try {
+        const allActivities = await getAllActivities();
+        response.send(allActivities);
 
-    const allActivities = await getAllActivities();
-    response.send(allActivities);
+    } catch (error) {
+        throw error
+    }
+    
 });
-// check with Chai (requireUser)
-activitiesRouter.post("/activities", requireUser, async(request, response, next) => {
+
+activitiesRouter.post("/", requireUser, async(request, response, next) => {
     const { name, description } = request.body;
 
     try {
         const createdActivity = await createActivity({ name, description });
         response.send(createdActivity);
 
-    } catch ({ name, message }) {
-        next({ name, message })
+    } catch (error) {
+        throw (error)
     }
 });
 
-activitiesRouter.patch("/activities/:activityId", requireUser, async(request, response, next) => {
-    const { activityId } = request.params;
+activitiesRouter.patch("/:activityId", requireUser, async(request, response, next) => {
+    const { activityId } = request.params; // activityId = id
     const { name, description } = request.body;
 
     try {
@@ -34,16 +41,16 @@ activitiesRouter.patch("/activities/:activityId", requireUser, async(request, re
         next({ name, message })
     }
 });
-// check with Chai
-activitiesRouter.get("/activities/:activityId/routines", async(request, response, next) => {
+
+activitiesRouter.get("/:activityId/routines", async(request, response, next) => {
     const { activityId } = request.params;
 
     try {
         const publicRoutinesByActivity = await getPublicRoutinesByActivity ({ activityId });
         response.send (publicRoutinesByActivity);
 
-    } catch ({ name, message }) {
-        next({ name, message })
+    } catch (error) {
+        throw (error)
     }
 });
 

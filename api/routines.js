@@ -2,19 +2,20 @@ const express = require("express");
 const routinesRouter = express.Router();
 
 const { requireUser } = require("./utils");
-const { getAllPublicRoutines, createRoutine, getRoutinebyId, updateRoutine, destroyRoutine, getRoutineActivitiesByRoutine } = require("../db");
+const { getAllPublicRoutines, createRoutine, getRoutinebyId, updateRoutine, destroyRoutine } = require("../db/routines");
+const { addActivityToRoutine } = require("../db/routine_activities");
 
 routinesRouter.get("/", async(request, response, next) => {
     try {
         const allPublicRoutinesWithactivities = await getAllPublicRoutines();
         response.send(allPublicRoutinesWithactivities);
 
-    } catch ({ name, message }) {
-        next({ name, message });
+    } catch (error) {
+        throw (error);
     }
 });
 
-routinesRouter.post("/routines", requireUser, async(request, response, next) => {
+routinesRouter.post("/", requireUser, async(request, response, next) => {
     const { name, goal, isPublic } = request.body;
     const creatorId = request.user.id; // check with chai and db is not right? has name twice
 
@@ -22,66 +23,55 @@ routinesRouter.post("/routines", requireUser, async(request, response, next) => 
         const createdRoutine = await createRoutine({ creatorId, isPublic, name, goal });
         response.send(createdRoutine);
 
-    } catch({ name, message }) {
-        next({ name, message });
+    } catch(error) {
+        throw (error);
     }
 });
 
-routinesRouter.patch("/routines/:routineId", requireUser, async(request, response, next) => {
+routinesRouter.patch("/:routineId", requireUser, async(request, response, next) => {
     const { routineId } = request.params;
     const { isPublic, name, goal } = request.body;
 
     try { // ** the logged in user should be the owner of the modified object
-        const originalRoutines = await getRoutinebyId(routineId)
+        const { ownerId } = await getRoutinebyId(routineId)
 
-        if (originalRoutines.id === request.user.id) { //originalRoutines.id?
+        if (ownerId === request.user.id) {
             const updatedRoutine = await updateRoutine({ routineId, isPublic, name, goal}) // do i need to justify isPublic status?
             response.send(updatedRoutine);
 
-        } else {
-            next({
-                name: "UnauthorizedUserError",
-                message: "You cannot update a post which is not yours"
-            });
         }
-    } catch ({ name, message }){
-        next({ name, message });
+    } catch (error){
+        throw (error);
     }
 });
 
-routinesRouter.delete("/routines/:routineId", requireUser, async(request, response, next) => {
+routinesRouter.delete("/:routineId", requireUser, async(request, response, next) => {
     const{ routineId } = request.params;
 
-    try { // No idea?????
-        const deleteRoutine = await getRoutinebyId(routineId)
+    try { // this has ** the logged in user should be the owner of the modified object
+        const { ownerId } = await getRoutinebyId(routineId)
 
-        if (deleteRoutine && deleteRoutine.id === request.user.id) { //routine.id?
+        if ( ownerId === request.user.id) {
             const deleteRoutine = await destroyRoutine(routineId)
-
-            const queriedRoutineActivities = await getRoutineActivitiesByRoutine(routineId)
+            
+            response.send(deleteRoutine);
         }
-    } catch({ name, message }) {
-        next({ name, message })
+
+    } catch(error) {
+        throw (error);
     }
 });
 
-routinesRouter.post("/routines/:routineId/activities", async(request, response, next) => {
+routinesRouter.post("/:routineId/activities", async(request, response, next) => {
     const { routineId } = request.params;
     const{ activityId, count, duration } = request.body;
 
     try {
-        // Prevent duplication on routineId, activityId
-         if (routineId !== activityId) {
             const attachActivityToRoutine = await addActivityToRoutine({ routineId, activityId, count, duration })
             response.send(attachActivityToRoutine)
-        } else {
-            next({
-                name: "DuplicationError",
-                message: "RoutineId and ActiviyId can't be duplicate"
-            });
         }
-    } catch ({ name, message }) {
-        next({ name, message });
+        catch (error) {
+        next(error);
     }
 })
 
