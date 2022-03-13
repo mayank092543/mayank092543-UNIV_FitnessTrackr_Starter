@@ -5,9 +5,6 @@
 const express = require("express");
 const apiRouter = express.Router();
 
-require("dotenv").config();
-const jwt = require("jsonwebtoken");
-const { JWT_SECRET } = process.env
 
 //set "request.user" if possible
 
@@ -17,6 +14,14 @@ apiRouter.use("/health", healthRouter);
 const usersRouter = require("./users");
 apiRouter.use("./users", usersRouter);
 
+const activitiesRouter = require("./activities");
+apiRouter.use("/activities", activitiesRouter);
+
+const routinesRouter = require("./routines");
+apiRouter.use("/routines", routinesRouter);
+
+const routine_activities = require("./routine_activities");
+apiRouter.use("/routine_activities", routine_activities);
 
 module.exports = apiRouter;
 
