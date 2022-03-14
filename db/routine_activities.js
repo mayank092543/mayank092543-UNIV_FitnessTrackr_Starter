@@ -1,7 +1,10 @@
-const { Client } = require('pg');
+const client = require('./client');
+// const { Client } = require('pg');
+// 
+// const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:5432/fitness-dev';
+// const routineActivityClient = new Client(CONNECTION_STRING);
 
-const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:1988/fitness-dev';
-const routineActivityClient = new Client(CONNECTION_STRING);
+
 
 // addActivityToRoutine({ routineId, activityId, count, duration })
 // create a new routine_activity, and return it
@@ -21,7 +24,7 @@ async function addActivityToRoutine({
 
     try {
         const { rows: [routine_activity] } = await routineActivityClient.query(`
-        INSERT INTO routineActivities(routineId, activityId, duration, count) 
+        INSERT INTO routine_activities(routineId, activityId, duration, count) 
         VALUES($1, $2, $3, $4) 
         RETURNING *;
       `, [routineId, activityId, duration, count]);
@@ -36,6 +39,5 @@ async function addActivityToRoutine({
 
 
 module.exports = {
-    routineActivityClient,
     addActivityToRoutine
 }

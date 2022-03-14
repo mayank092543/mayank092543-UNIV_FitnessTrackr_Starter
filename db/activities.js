@@ -1,7 +1,8 @@
-const { Client } = require('pg');
-
-const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:8675/fitness-dev';
-const activityClient = new Client(CONNECTION_STRING);
+const client = require('./client');
+// const { Client } = require('pg');
+// 
+// const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:5432/fitness-dev';
+// const activityClient = new Client(CONNECTION_STRING);
 
 // getActivityById(id)
 // return the activity
@@ -46,7 +47,7 @@ async function getAllActivities() {
 async function createActivity({ name, description }) {
 
     try {
-        const { rows: [activity] } = await activityClient.query(`
+        const { rows: [activity] } = await client.query(`
         INSERT INTO activities(name, description) 
         VALUES($1, $2) 
         ON CONFLICT (name) DO NOTHING 
@@ -84,7 +85,6 @@ async function updateActivity({ id, name, description }) {
 
 
 module.exports = {
-    activityClient,
     createActivity,
     getAllActivities,
     getActivityById,

@@ -1,18 +1,36 @@
-const { Client } = require('pg');
+const client = require('./client');
+// const { Client } = require('pg');
+// 
+// const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:5432/fitness-dev';
+// const routineClient = new Client(CONNECTION_STRING);
 
-const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:6991/fitness-dev';
-const routineClient = new Client(CONNECTION_STRING);
 
-// getRoutineById
 // getRoutineById(id)
 // return the routine
+async function getRoutineById(id) {
+    try {
+        const { rows: [routine] } = await client.query(`
+        SELECT *
+        FROM routines
+        WHERE routineId=${ id }
+      `);
+
+        if (!id) {
+            return null;
+        }
+
+        return routine;
+    } catch (error) {
+        throw error;
+    }
+}
 
 
 // getRoutinesWithoutActivities
 // select and return an array of all routines
 async function getRoutinesWithoutActivities() {
     try {
-        const { rows: [routine] } = await routineClient.query(`
+        const { rows: [routine] } = await client.query(`
         SELECT *
         FROM routines
         WHERE activityId=null
@@ -31,7 +49,18 @@ async function getRoutinesWithoutActivities() {
 
 // getAllRoutines
 // select and return an array of all routines, include their activities
+async function getAllRoutines() {
+    try {
+        const { rows } = await client.query(`
+        SELECT *
+        FROM routines;
+        `);
 
+        return rows;
+    } catch (error) {
+        throw error;
+    }
+}
 
 
 // getAllPublicRoutines
@@ -63,7 +92,7 @@ async function createRoutine({
     goal
 }) {
     try {
-        const { rows: [routine] } = await routineClient.query(`
+        const { rows: [routine] } = await client.query(`
         INSERT INTO routines(creatorId, isPublic, name, goal) 
         VALUES($1, $2, $3, $4) 
         ON CONFLICT (creatorId) DO NOTHING 
@@ -90,7 +119,6 @@ async function createRoutine({
 
 
 module.exports = {
-    routineClient,
     createRoutine,
     getRoutinesWithoutActivities
 }

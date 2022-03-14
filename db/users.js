@@ -1,8 +1,9 @@
-const { Client } = require('pg');
+// const { Client } = require('pg');
+const client = require('./client');
 const bcrypt = require("bcrypt");
 
-const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:1108/fitness-dev';
-const userClient = new Client(CONNECTION_STRING);
+// const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:5432/fitness-dev';
+// const userClient = new Client(CONNECTION_STRING);
 
 
 // createUser({ username, password })
@@ -18,7 +19,7 @@ async function createUser({ username, password }) {
     });
 
     try {
-        const { rows: [user] } = await userClient.query(`
+        const { rows: [user] } = await client.query(`
         INSERT INTO users(username, password) 
         VALUES($1, $2) 
         ON CONFLICT (username) DO NOTHING 
@@ -30,7 +31,7 @@ async function createUser({ username, password }) {
         // remove the password from the returned row
         const returnedUser = user;
         returnedUser.password = '';
-        console.log(returnedUser.password);
+        //console.log(returnedUser.password);
 
         return returnedUser;
     } catch (error) {
@@ -50,7 +51,7 @@ async function getUser({ username, password }) {
             // remove the password from the returned row
             const returnedUser = user;
             returnedUser.password = '';
-            console.log(returnedUser.password);
+            //console.log(returnedUser.password);
 
             return returnedUser;
         } else {
@@ -66,7 +67,7 @@ async function getUser({ username, password }) {
 // do NOT return the password
 async function getUserById(id) {
     try {
-        const { rows: [user] } = await userClient.query(`
+        const { rows: [user] } = await client.query(`
         SELECT id, username, password
         FROM users
         WHERE id=${ id }
@@ -89,7 +90,7 @@ async function getUserById(id) {
 // select a user using the user's username. Return the user object.
 async function getUserbyUsername(username) {
     try {
-        const { rows: [user] } = await userClient.query(`
+        const { rows: [user] } = await client.query(`
             SELECT *
             FROM users
             WHERE username=$1;
@@ -103,8 +104,8 @@ async function getUserbyUsername(username) {
 
 
 module.exports = {
-    userClient,
     createUser,
+    getUser,
     getUserById,
     getUserbyUsername
 }
