@@ -1,18 +1,40 @@
-// require and re-export all files in this db directory (users, activities...)
+const client = require('./client');
 const {
-    userClient,
-    createUser
-} = require('./users.js');
+    createUser,
+    getUserById,
+    getUserbyUsername
+} = require('./users');
 
 const {
-    activityClient,
-    createActivity
-} = require('./activities.js');
+    createActivity,
+    getAllActivities,
+    getActivityById,
+    updateActivity
+} = require('./activities');
+
+const {
+    createRoutine,
+    getRoutinesWithoutActivities
+} = require('./routines');
+
+const {
+    addActivityToRoutine
+} = require('./routine_activities');
 
 
 module.exports = {
-    userClient,
-    activityClient,
+    client,
     createUser,
-    createActivity
-}
+    getUserById,
+    getUserbyUsername,
+
+    createActivity,
+    getAllActivities,
+    getActivityById,
+    updateActivity,
+
+    createRoutine,
+    getRoutinesWithoutActivities,
+
+    addActivityToRoutine
+};
