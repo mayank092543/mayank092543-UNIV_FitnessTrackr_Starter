@@ -1,13 +1,28 @@
+const client = require('./client');
 // const { Client } = require('pg');
-
-const client = require("./client");
-
+// 
 // const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:5432/fitness-dev';
 // const activityClient = new Client(CONNECTION_STRING);
 
 // getActivityById(id)
 // return the activity
+async function getActivityById(id) {
+    try {
+        const { rows: [activity] } = await client.query(`
+        SELECT *
+        FROM activities
+        WHERE id=${ id }
+      `);
 
+        if (!id) {
+            return null;
+        }
+
+        return activity;
+    } catch (error) {
+        throw error;
+    }
+}
 
 
 // getAllActivities
@@ -31,7 +46,7 @@ async function getAllActivities() {
 async function createActivity({ name, description }) {
 
     try {
-        const { rows: [activity] } = await activityClient.query(`
+        const { rows: [activity] } = await client.query(`
         INSERT INTO activities(name, description) 
         VALUES($1, $2) 
         ON CONFLICT (name) DO NOTHING 
@@ -49,11 +64,28 @@ async function createActivity({ name, description }) {
 // don't try to update the id
 // do update the name and description
 // return the updated activity
+async function updateActivity({ id, name, description }) {
+
+    try {
+        const { rows: [activity] } = await client.query(`
+        UPDATE activities
+        SET name=${ name },
+            description=${ description }
+        WHERE activityId=${ id }
+        RETURNING *;
+      `, [id, name, description]);
+
+        return activity;
+    } catch (error) {
+        throw error;
+    }
+}
 
 
 
 module.exports = {
-    // activityClient,
     createActivity,
-    getAllActivities
+    getAllActivities,
+    getActivityById,
+    updateActivity
 }

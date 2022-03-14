@@ -56,4 +56,3 @@ const routine_activities = require("./routine_activities");
 apiRouter.use("/routine_activities", routine_activities);
 
 module.exports = apiRouter;
-
