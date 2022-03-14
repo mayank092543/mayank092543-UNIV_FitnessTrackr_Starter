@@ -9,14 +9,15 @@ const bcrypt = require("bcrypt");
 // createUser({ username, password })
 // make sure to hash the password before storing it to the database
 async function createUser({ username, password }) {
-    const SALT_COUNT = 10;
 
-    bcrypt.hash(password, SALT_COUNT, function(err, hashedPassword) {
-        createUser({
-            username,
-            password: hashedPassword // not the plaintext
-        });
-    });
+    // const SALT_COUNT = 10;
+
+    // bcrypt.hash(password, SALT_COUNT, function(err, hashedPassword) {
+    //     createUser({
+    //         username,
+    //         password: hashedPassword // not the plaintext
+    //     });
+    // });
 
     try {
         const { rows: [user] } = await client.query(`
@@ -31,6 +32,7 @@ async function createUser({ username, password }) {
         // remove the password from the returned row
         const returnedUser = user;
         returnedUser.password = '';
+
         //console.log(returnedUser.password);
 
         return returnedUser;
@@ -51,6 +53,7 @@ async function getUser({ username, password }) {
             // remove the password from the returned row
             const returnedUser = user;
             returnedUser.password = '';
+
             //console.log(returnedUser.password);
 
             return returnedUser;

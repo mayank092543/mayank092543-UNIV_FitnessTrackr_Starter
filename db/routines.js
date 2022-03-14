@@ -120,5 +120,5 @@ async function createRoutine({
 
 module.exports = {
     createRoutine,
-    getRoutinesWithoutActivities
+    getRoutinesWithoutActivities,
 }

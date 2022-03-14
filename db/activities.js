@@ -25,7 +25,6 @@ async function getActivityById(id) {
 }
 
 
-
 // getAllActivities
 // select and return an array of all activities
 async function getAllActivities() {
