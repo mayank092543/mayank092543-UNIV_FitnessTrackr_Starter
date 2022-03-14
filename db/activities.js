@@ -1,7 +1,9 @@
-const { Client } = require('pg');
+// const { Client } = require('pg');
 
-const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:5432/fitness-dev';
-const activityClient = new Client(CONNECTION_STRING);
+const client = require("./client");
+
+// const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:5432/fitness-dev';
+// const activityClient = new Client(CONNECTION_STRING);
 
 // getActivityById(id)
 // return the activity
@@ -51,7 +53,7 @@ async function createActivity({ name, description }) {
 
 
 module.exports = {
-    activityClient,
+    // activityClient,
     createActivity,
     getAllActivities
 }

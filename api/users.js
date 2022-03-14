@@ -56,6 +56,11 @@ usersRouter.post("/login", async(request, response, next) => {
             const token = jwt.sign({ id: user.id, username }, JWT_SECRET );
 
             response.send({ message: "You are logged in!", token: token});
+        } else {
+            next({
+                name: "MissingCredentialsError",
+                message: "Please supply both a username and password"
+            });
         }
     } catch (error) {
         console.log(error);

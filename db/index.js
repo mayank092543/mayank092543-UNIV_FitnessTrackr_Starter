@@ -1,43 +1,46 @@
 // require and re-export all files in this db directory (users, activities...)
+const client = require("./client");
 const {
-    userClient,
     createUser,
+    getUser, //just add
     getUserById,
     getUserbyUsername
-} = require('./users.js');
+} = require('./users');
 
 const {
-    activityClient,
+    getActivityById,
     createActivity,
-    getAllActivities
-} = require('./activities.js');
+    getAllActivities,
+    updateActivity // just add
+} = require('./activities');
 
 const {
-    routineClient,
     createRoutine,
-    getRoutinesWithoutActivities
-} = require('./routines.js')
+    getRoutinesWithoutActivities,
+    getAllRoutines,
+    updateRoutine,
+    getRoutineById,
+    destroyRoutine,
+    getAllPublicRoutines,
+    getAllRoutinesByUser,
+    getPublicRoutinesByUser,
+    getPublicRoutinesByActivity
+
+} = require('./routines')
 
 // const {
-//     routineActivityClient,
-//     addActivityToRoutine
-// } = require('./routine_activities.js')
+//     addActivityToRoutine,
+//     destroyRoutineActivity,
+//     updateRoutineActivity,
+//     getRoutineActivitiesByRoutine,
+//     getRoutineActivityById
+// } = require('./routine_activities')
 
 
 module.exports = {
-    userClient,
-    createUser,
-    getUserById,
-    getUserbyUsername,
-
-    activityClient,
-    createActivity,
-    getAllActivities,
-
-    routineClient,
-    createRoutine,
-    getRoutinesWithoutActivities,
-
-    // routineActivityClient,
-    // addActivityToRoutine
+    client,
+   ...require("./users"),
+   ...require("./activities"),
+   ...require("./routines"),
+//    ...require("./routine_activities")
 }

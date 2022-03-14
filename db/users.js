@@ -1,8 +1,9 @@
-const { Client } = require('pg');
+// const { Client } = require('pg');
+const client = require("./client");
 const bcrypt = require("bcrypt");
 
-const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:5432/fitness-dev';
-const userClient = new Client(CONNECTION_STRING);
+// const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:5432/fitness-dev';
+// const userClient = new Client(CONNECTION_STRING);
 
 
 // createUser({ username, password })
@@ -103,7 +104,7 @@ async function getUserbyUsername(username) {
 
 
 module.exports = {
-    userClient,
+    getUser,
     createUser,
     getUserById,
     getUserbyUsername

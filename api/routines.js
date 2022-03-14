@@ -38,7 +38,11 @@ routinesRouter.patch("/:routineId", requireUser, async(request, response, next) 
         if (ownerId === request.user.id) {
             const updatedRoutine = await updateRoutine({ routineId, isPublic, name, goal}) // do i need to justify isPublic status?
             response.send(updatedRoutine);
-
+        } else {
+            next({
+            name: "UnauthorizedUserError",
+            message: "You cannot update routine which is not yours"
+            })   
         }
     } catch (error){
         throw (error);
@@ -55,6 +59,11 @@ routinesRouter.delete("/:routineId", requireUser, async(request, response, next)
             const deleteRoutine = await destroyRoutine(routineId)
             
             response.send(deleteRoutine);
+        } else {
+            next ({
+                name: "UnauthorizedUserError",
+                message: "You cannot delete a routine which is not yours"
+            })
         }
 
     } catch(error) {
@@ -71,7 +80,7 @@ routinesRouter.post("/:routineId/activities", async(request, response, next) => 
             response.send(attachActivityToRoutine)
         }
         catch (error) {
-        next(error);
+        throw (error);
     }
 })
 

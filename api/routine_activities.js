@@ -17,7 +17,9 @@ routine_activities.patch("/:routineActivityId", requireUser, async(request, resp
         const updatedRoutineActivity = await updateRoutineActivity({routineActivityId, count, duration })
         response.send(updatedRoutineActivity);
 
-    } 
+    } else {
+        next()
+    }
 } catch (error) {
     throw (error)
 }

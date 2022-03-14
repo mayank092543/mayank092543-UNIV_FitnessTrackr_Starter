@@ -1,7 +1,9 @@
-const { Client } = require('pg');
+// const { Client } = require('pg');
 
-const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:5432/fitness-dev';
-const routineClient = new Client(CONNECTION_STRING);
+const client = require("./client");
+
+// const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:5432/fitness-dev';
+// const routineClient = new Client(CONNECTION_STRING);
 
 // getRoutineById
 // getRoutineById(id)
@@ -90,7 +92,7 @@ async function createRoutine({
 
 
 module.exports = {
-    routineClient,
+    // routineClient,
     createRoutine,
     getRoutinesWithoutActivities
 }
