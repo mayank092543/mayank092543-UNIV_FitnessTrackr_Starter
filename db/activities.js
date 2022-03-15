@@ -1,22 +1,12 @@
 const client = require('./client');
-// const { Client } = require('pg');
-// 
-// const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:5432/fitness-dev';
-// const activityClient = new Client(CONNECTION_STRING);
 
-// getActivityById(id)
-// return the activity
 async function getActivityById(id) {
     try {
-        const { rows: [activity] } = await client.query(`
+        const { rows: [ activity ] } = await client.query(`
         SELECT *
         FROM activities
-        WHERE id=${ id }
-      `);
-
-        if (!id) {
-            return null;
-        }
+        WHERE id=$1
+      `, [id]);
 
         return activity;
     } catch (error) {
@@ -24,9 +14,6 @@ async function getActivityById(id) {
     }
 }
 
-
-// getAllActivities
-// select and return an array of all activities
 async function getAllActivities() {
     try {
         const { rows } = await client.query(`
@@ -40,16 +27,11 @@ async function getAllActivities() {
     }
 }
 
-
-// createActivity({ name, description })
-// return the new activity
 async function createActivity({ name, description }) {
-
     try {
-        const { rows: [activity] } = await client.query(`
-        INSERT INTO activities(name, description) 
+        const { rows: [ activity ] } = await client.query(`
+        INSERT INTO activities (name, description) 
         VALUES($1, $2) 
-        ON CONFLICT (name) DO NOTHING 
         RETURNING *;
       `, [name, description]);
 
@@ -59,21 +41,16 @@ async function createActivity({ name, description }) {
     }
 }
 
-
-// updateActivity({ id, name, description })
-// don't try to update the id
-// do update the name and description
-// return the updated activity
 async function updateActivity({ id, name, description }) {
 
     try {
-        const { rows: [activity] } = await client.query(`
+        const { rows: [ activity ] } = await client.query(`
         UPDATE activities
-        SET name=${ name },
-            description=${ description }
-        WHERE activityId=${ id }
+        SET name=$1,
+        description=$2
+        WHERE activityId=$3
         RETURNING *;
-      `, [id, name, description]);
+      `, [name, description, id]);
 
         return activity;
     } catch (error) {
@@ -84,8 +61,8 @@ async function updateActivity({ id, name, description }) {
 
 
 module.exports = {
-    createActivity,
-    getAllActivities,
     getActivityById,
+    getAllActivities,
+    createActivity,
     updateActivity
 }

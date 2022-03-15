@@ -1,20 +1,19 @@
 const client = require('./client');
-// const { Client } = require('pg');
-// 
-// const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:5432/fitness-dev';
-// const routineActivityClient = new Client(CONNECTION_STRING);
 
+async function getRoutineActivityById(id) {
+    try {
+        const { rows: [ routine_activity ] } = await client.query(`
+        SELECT * 
+        FROM routine_activities
+        WHERE id=$1
+        `, [id])
+        
+        return routine_activity
+    } catch (error) {
+        throw error
+    }
+}
 
-
-// addActivityToRoutine({ routineId, activityId, count, duration })
-// create a new routine_activity, and return it
-//      routine_activity {
-//          "id": 11,
-//          "routineId": 6,
-//          "activityId": 7,
-//          "duration": 30,
-//          "count": 2
-//      }
 async function addActivityToRoutine({
     routineId,
     activityId,
@@ -23,9 +22,11 @@ async function addActivityToRoutine({
 }) {
 
     try {
-        const { rows: [routine_activity] } = await routineActivityClient.query(`
+        const { rows: [routine_activity] } = await client.query(`
         INSERT INTO routine_activities(routineId, activityId, duration, count) 
-        VALUES($1, $2, $3, $4) 
+        VALUES($1, $2, $3, $4)
+        ON CONFLICT ("routineId", "activityId")
+        DO NOTHING 
         RETURNING *;
       `, [routineId, activityId, duration, count]);
 
@@ -35,9 +36,54 @@ async function addActivityToRoutine({
     }
 }
 
+async function updateRoutineActivity({ id, count, duration }) {
+    try {
+        const { rows: [ updatedRoutineActivity ] } = await client.query(`
+        UPDATE routine_activities
+        SET count=$1
+        duration=$2
+        WHERE id=$3
+        RETURNING *;
+        `[count, duration, id])
+        
+        return updatedRoutineActivity
+    } catch (error) {
+        throw error
+    }
+}
 
+async function destroyRoutineActivity(id) {
+    try {
+        const { rows: [ deleteRoutineActivity ] } = await client.query(`
+        DELETE routine_activities
+        WHERE id=$1
+        RETURNING *;
+        `,[id])
 
+        return deleteRoutineActivity
+    } catch (error) {
+        throw error
+    }
+}
+
+async function getRoutineActivitiesByRoutine({ id }) {
+    try {
+        const { rows: [ allRoutines ] } = await client.query(`
+        SELECT *
+        FROM routine_activities
+        WHERE "routineId"=$1
+        `, [id])
+
+        return allRoutines
+    } catch (error) {
+        throw error
+    }
+}
 
 module.exports = {
-    addActivityToRoutine
+    getRoutineActivityById,
+    addActivityToRoutine,
+    updateRoutineActivity,
+    destroyRoutineActivity,
+    getRoutineActivitiesByRoutine
 }

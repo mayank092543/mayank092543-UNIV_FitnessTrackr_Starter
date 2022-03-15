@@ -1,164 +1,77 @@
-// const client = require('./client');
-// const { Client } = require('pg');
-// const connection = 'http://localhost:5432/fitness-dev';
-// const client = new Client(connection);
-
 const client = require('./client');
 
-const {
-    createUser,
-    getUser
-} = require('./users');
-
-
-const {
-    createActivity,
-    getAllActivities
-} = require("./activities");
-
-const {
-    createRoutine,
-    getRoutinesWithoutActivities,
-} = require("./routines");
-
-const {
-    addActivityToRoutine
-} = require("./routine_activities")
-
-// console.log(client);
+const { createUser, getUser } = require("./users");
+const { createActivity, getAllActivities} = require("./activities");
+const { createRoutine, getRoutinesWithoutActivities } = require("./routines");
+const { addActivityToRoutine } = require("./routine_activities");
 
 
 async function dropTables() {
     try {
         console.log('Dropping All Tables...');
 
-        // drop all tables, in the correct order
+         // drop all tables, in the correct order
 
-        await client.query(
-            `DROP TABLE IF EXISTS routine_activities;
+        await client.query(`
+            DROP TABLE IF EXISTS routine_activities;
             DROP TABLE IF EXISTS routines;
             DROP TABLE IF EXISTS activities;
-            DROP TABLE IF EXISTS users;`
-        );
-        console.log("Finished dropping tables!")
-    } catch (error) {
+            DROP TABLE IF EXISTS users;
+        `);
+
+        console.log("Finished dropping tables!");
+      } catch (error) {
         console.error("Error dropping tables!");
         throw error;
-    }
+  }
 }
-
-// async function createTables() {
-//     console.log("Starting to build tables...");
-//     await client.query(
-//       `CREATE TABLE users (
-//         id SERIAL PRIMARY KEY,
-//         username VARCHAR(255) UNIQUE NOT NULL,
-//         password VARCHAR(255) NOT NULL
-//         );
-//       CREATE TABLE activities (
-//         id SERIAL PRIMARY KEY,
-//         name varchar(255) UNIQUE NOT NULL,
-//         description TEXT NOT NULL,
-//         );
-//       CREATE TABLE routines (
-//         id SERIAL PRIMARY KEY,
-//         "creatorId" INTEGER REFERENCES user(id),
-//         "isPublic" BOOLEAN DEFAULT false,
-//         name varchar(255) UNIQUE NOT NULL,
-//         goal TEXT NOT NULL
-//         );
-//       CREATE TABLE routine_activities (
-//         id SERIAL PRIMARY KEY,
-//         "routineId" INTEGER REFERENCES routine(id),
-//         "activityId" INTEGER REFERENCES activites(id),
-//         UNIQUE ("routineId", "activityId")
-//         duration INTEGER,
-//         count INTEGER
-//         );`
-//     );
-//     console.log("Finished building tables!");
-//     console.error("Error building tables!");
-//       throw error;
-//     }
-
-//     `CREATE TABLE users (
-//         id SERIAL PRIMARY KEY,
-//         username VARCHAR(255) UNIQUE NOT NULL,
-//         password VARCHAR(255) NOT NULL,
-//         );
-//     
-//       CREATE TABLE activities (
-//         id SERIAL PRIMARY KEY,
-//         name varchar(255) UNIQUE NOT NULL,
-//         description TEXT NOT NULL,
-//         );
-//         
-//       CREATE TABLE routines (
-//         id SERIAL PRIMARY KEY,
-//         "creatorId" INTEGER REFERENCES user(id),
-//         "isPublic" BOOLEAN DEFAULT false,
-//         name varchar(255) UNIQUE NOT NULL,
-//         goal TEXT NOT NULL
-//         );
-// 
-//       CREATE TABLE routine_activities (
-//         id SERIAL PRIMARY KEY,
-//         "routineId" INTEGER REFERENCES routine(id),
-//         "activityId" INTEGER REFERENCES activites(id),
-//         duration INTEGER FOREIGN KEY,
-//         count INTEGER
-//         UNIQUE ("routineId", "activityId")
-//         );`
 
 async function createTables() {
     try {
         console.log("Starting to build tables...");
 
+        await client.query(`
 
-        // name VARCHAR(255) NOT NULL,
-        // location VARCHAR(255) NOT NULL,
-        // active BOOLEAN DEFAULT true
-        await client.query(
-            `CREATE TABLE users (
-                id SERIAL PRIMARY KEY,
-                username VARCHAR(255) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL
-                );
-              CREATE TABLE activities (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(255) UNIQUE NOT NULL,
-                description TEXT NOT NULL
-                );
-              CREATE TABLE routines (
-                id SERIAL PRIMARY KEY,
-                "creatorId" INTEGER REFERENCES users(id),
-                "isPublic" BOOLEAN DEFAULT false,
-                name VARCHAR(255) UNIQUE NOT NULL,
-                goal TEXT NOT NULL
-                );
-              CREATE TABLE routine_activities (
-                id SERIAL PRIMARY KEY,
-                "routineId" INTEGER REFERENCES routines(id),
-                "activityId" INTEGER REFERENCES activities(id),
-                UNIQUE ("routineId", "activityId"),
-                duration INTEGER,
-                count INTEGER
-                );`
+            CREATE TABLE users (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(255) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL
+            );
+            
+            CREATE TABLE activities (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) UNIQUE NOT NULL,
+            description TEXT NOT NULL,
+            );
 
+            CREATE TABLE routines (
+            id SERIAL PRIMARY KEY,
+            "creatorId" INTEGER REFERENCES users(id),
+            "isPublic" BOOLEAN DEFAULT false,
+            name VARCHAR(255) UNIQUE NOT NULL,
+            goal TEXT NOT NULL
+            );
 
-        );
+            CREATE TABLE routine_activities (
+            id SERIAL PRIMARY KEY,
+            "routineId" INTEGER REFERENCES routines(id),
+            "activityId" INTEGER REFERENCES activites(id),
+            UNIQUE ("routineId", "activityId")
+            duration INTEGER,
+            count INTEGER
+            );
+            
+        `);
+    
         console.log("Finished building tables!");
-    } catch (error) {
+      } catch (error) {
         console.error("Error building tables!");
         throw error;
-    }
+  }
 }
 
 /* 
-
-DO NOT CHANGE ANYTHING BELOW. This is default seed data, and will help you start testing, 
-before getting to the tests. 
-
+DO NOT CHANGE ANYTHING BELOW. This is default seed data, and will help you start testing, before getting to the tests. 
 */
 
 async function createInitialUsers() {
@@ -211,10 +124,10 @@ async function createInitialUsers() {
       console.log('starting to create routines...');
   
       const routinesToCreate = [
-        { creatorId: 2, isPublic: false, name: 'Bicep Day', goal: 'Work the Back and Biceps.' },
-        { creatorId: 1, isPublic: true, name: 'Chest Day', goal: 'To beef up the Chest and Triceps!' },
-        { creatorId: 1, isPublic: false, name: 'Leg Day', goal: 'Running, stairs, squats' },
-        { creatorId: 2, isPublic: true, name: 'Cardio Day', goal: 'Running, stairs. Stuff that gets your heart pumping!' },
+        {creatorId: 2, isPublic: false, name: 'Bicep Day', goal: 'Work the Back and Biceps.'},
+        {creatorId: 1, isPublic: true, name: 'Chest Day', goal: 'To beef up the Chest and Triceps!'},
+        {creatorId: 1, isPublic: false, name: 'Leg Day', goal: 'Running, stairs, squats'},
+        {creatorId: 2, isPublic: true, name: 'Cardio Day', goal: 'Running, stairs. Stuff that gets your heart pumping!'},
       ]
       const routines = await Promise.all(routinesToCreate.map(routine => createRoutine(routine)));
       console.log('Routines Created: ', routines)
@@ -229,60 +142,61 @@ async function createInitialUsers() {
       console.log('starting to create routine_activities...');
       const [bicepRoutine, chestRoutine, legRoutine, cardioRoutine] = await getRoutinesWithoutActivities();
       const [bicep1, bicep2, chest1, chest2, leg1, leg2, leg3] = await getAllActivities();
+  
       const routineActivitiesToCreate = [
         {
           routineId: bicepRoutine.id,
           activityId: bicep1.id,
           count: 10,
-          duration: 5
+          duration: 5 
         },
         {
           routineId: bicepRoutine.id,
           activityId: bicep2.id,
           count: 10,
-          duration: 8
+          duration: 8 
         },
         {
           routineId: chestRoutine.id,
           activityId: chest1.id,
           count: 10,
-          duration: 8
+          duration: 8 
         },
         {
           routineId: chestRoutine.id,
           activityId: chest2.id,
           count: 10,
-          duration: 7
+          duration: 7 
         },
         {
           routineId: legRoutine.id,
           activityId: leg1.id,
           count: 10,
-          duration: 9
+          duration: 9 
         },
         {
           routineId: legRoutine.id,
           activityId: leg2.id,
           count: 10,
-          duration: 10
+          duration: 10 
         },
         {
           routineId: legRoutine.id,
           activityId: leg3.id,
           count: 10,
-          duration: 7
+          duration: 7 
         },
         {
           routineId: cardioRoutine.id,
           activityId: leg2.id,
           count: 10,
-          duration: 10
+          duration: 10 
         },
         {
           routineId: cardioRoutine.id,
           activityId: leg3.id,
           count: 10,
-          duration: 15
+          duration: 15 
         },
       ]
       const routineActivities = await Promise.all(routineActivitiesToCreate.map(addActivityToRoutine));
