@@ -1,29 +1,18 @@
-// const client = require('./client');
-// // const { Client } = require('pg');
-// // 
-// // const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:5432/fitness-dev';
-// // const routineClient = new Client(CONNECTION_STRING);
+const client = require('./client');
 
+async function getRoutineById(id) {
+    try {
+        const { rows: [routine] } = await client.query(`
+        SELECT *
+        FROM routines
+        WHERE routineId=$1
+      `[id]);
 
-// // getRoutineById(id)
-// // return the routine
-// async function getRoutineById(id) {
-//     try {
-//         const { rows: [routine] } = await client.query(`
-//         SELECT *
-//         FROM routines
-//         WHERE routineId=${ id }
-//       `);
-
-//         if (!id) {
-//             return null;
-//         }
-
-//         return routine;
-//     } catch (error) {
-//         throw error;
-//     }
-// }
+        return routine;
+    } catch (error) {
+        throw error;
+    }
+}
 
 
 async function getRoutinesWithoutActivities() {
@@ -33,7 +22,7 @@ async function getRoutinesWithoutActivities() {
         FROM routines
       `);
 
-        return routine;
+        return rows;
     } catch (error) {
         throw error;
     }
@@ -42,18 +31,19 @@ async function getRoutinesWithoutActivities() {
 
 // // getAllRoutines
 // // select and return an array of all routines, include their activities
-// async function getAllRoutines() {
-//     try {
-//         const { rows } = await client.query(`
-//         SELECT *
-//         FROM routines;
-//         `);
 
-//         return rows;
-//     } catch (error) {
-//         throw error;
-//     }
-// }
+async function getAllRoutines() {
+    try {
+        const { rows } = await client.query(`
+        SELECT *
+        FROM routines;
+        `);
+
+        return rows;
+    } catch (error) {
+        throw error;
+    }
+}
 
 
 // // getAllPublicRoutines
@@ -75,10 +65,6 @@ async function getRoutinesWithoutActivities() {
 // // select and return an array of public routines which have a specific activityId in their routine_activities join, include their activities
 
 
-
-// // createRoutine({ creatorId, isPublic, name, goal })
-// // create and return the new routine
-
 async function createRoutine({
     creatorId,
     isPublic,
@@ -87,9 +73,8 @@ async function createRoutine({
 }) {
     try {
         const { rows: [routine] } = await client.query(`
-        INSERT INTO routines(creatorId, isPublic, name, goal) 
-        VALUES($1, $2, $3, $4) 
-        ON CONFLICT (creatorId) DO NOTHING 
+        INSERT INTO routines("creatorId", "isPublic", "name", "goal") 
+        VALUES($1, $2, $3, $4)
         RETURNING *;
       `, [creatorId, isPublic, name, goal]);
 
@@ -100,10 +85,22 @@ async function createRoutine({
 }
 
 
-// // updateRoutine({ id, isPublic, name, goal })
-// // Find the routine with id equal to the passed in id
-// // Don't update the routine id, but do update the isPublic status, name, or goal, as necessary
-// // Return the updated routine
+async function updateRoutine({ id, isPublic, name, goal }) {
+    try { // Coalesce = handle null values
+        const { rows: [ updatedRoutine ] } = await client.query(`
+        UPDATE routines
+        SET "isPublic"= Coalesce($1, "isPublic"),
+        name= $2,
+        goal=$3
+        WHERE id=$4
+        RETURNING *;
+        `, [isPublic, name, goal, id])
+
+        return updatedRoutine
+    } catch (error) {
+        throw error
+    }
+}
 
 
 
@@ -111,8 +108,30 @@ async function createRoutine({
 // // remove routine from database
 // // Make sure to delete all the routine_activities whose routine is the one being deleted.
 
+async function destroyRoutine(id) {
+    try {
+        const { rows: [ deletedRoutine ] } = await client.query(`
+        DELETE FROM routines
+        WHERE id=$1
+        `, [id])
+
+        const { rows: deletedRoutineActivities } = await client.query(`
+        DELETE FROM routine_activities
+        WHERE id=$1
+        `, [id])
+
+        return deletedRoutine
+    } catch (error) {
+        throw error
+    }
+}
+
 
 module.exports = {
     createRoutine,
     getRoutinesWithoutActivities,
+    getRoutineById,
+    updateRoutine,
+    destroyRoutine,
+    getAllRoutines
 }
