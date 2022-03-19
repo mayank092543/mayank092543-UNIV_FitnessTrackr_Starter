@@ -4,7 +4,7 @@
 require("dotenv").config();
 
 // Create a constant variable, PORT, based on what's in process.env.PORT or fallback to 3000
-const {PORT = 3000} = process.env;
+const {PORT = 1337} = process.env;
 
 // Import express, and create a server
 const express = require("express");
