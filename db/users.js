@@ -45,17 +45,6 @@ async function getUserById(id) {
         WHERE id=$1;
       `, [id]);
 
-//         if (!user) {
-//             return null
-//         }
-//         const noPwUser = user;
-//         delete noPwUser.password;
-
-//         return noPwUser;
-//     } catch (error) {
-//         throw error;
-//     }
-// }
         return user
       } catch (error) {
           throw error;

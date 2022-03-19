@@ -1,48 +1,54 @@
 const express = require("express");
 const routine_activities = express.Router();
 
-const{ requireUser } = require("./utils");
-const { getRoutineActivityById, updateRoutineActivity, destroyRoutineActivity } = require("../db");
+const { requireUser, requiredNotSent } = require("./utils");
+const { getRoutineActivityById, updateRoutineActivity, destroyRoutineActivity, canEditRoutineActivity } = require("../db");
 const { getRoutineById } = require("../db/routines");
 
-
-routine_activities.patch("/:routineActivityId", requireUser, async(request, response, next) => {
-    const { routineActivityId } = request.params; // id
-    const { count, duration } = request.body;
-
-    // this has ** the logged in user should be the owner of the modified object
+// this has ** the logged in user should be the owner of the modified object
+routine_activities.patch('/:routineActivityId', requireUser, requiredNotSent({requiredParams: ['count', 'duration'], atLeastOne: true}), async (request, response, next) => {
     try {
-    const { ownerId} = await getRoutineById(routineActivityId)
-    if (ownerId === request.user.id){
-        const updatedRoutineActivity = await updateRoutineActivity({routineActivityId, count, duration })
-        response.send(updatedRoutineActivity);
-
-    } else {
-        next()
-    }
-} catch (error) {
-    throw (error)
-}
-
-});
-
-routine_activities.delete("/:routineActivityId", requireUser, async(request, response, next) => {
-    const { routineActivityId } = request.params;
-
-    try {  // this has ** the logged in user should be the owner of the modified object
-        const { ownerId } = await getRoutineById(routineActivityId);
-        if (ownerId === request.user.id) {
-            const deletedRoutineActivity = await destroyRoutineActivity(routineActivityId)
-            response.send(deletedRoutineActivity);
-
+      const {count, duration} = request.body;
+      const {routineActivityId} = request.params;
+      
+      const getRoutineActivity = await getRoutineActivityById(routineActivityId);
+      if(!getRoutineActivity) {
+        next({
+          name: 'NotFound',
+          message: `No routine_activity found by this ID ${routineActivityId}`
+        })
+      } else {
+        if(!await canEditRoutineActivity(routineActivityId, request.user.id)) {
+            next({
+              name: "UnauthorizedUser", 
+              message: "You cannot edit this routine_activity which is not yours"
+            });
         } else {
-            next()
+          const updatedRoutineActivity = await updateRoutineActivity({id: routineActivityId, count, duration})
+          response.send(updatedRoutineActivity);
         }
-
+      }
     } catch (error) {
-        throw (error);
+      next(error);
     }
-});
-
+  });
+  
+  
+  routine_activities.delete('/:routineActivityId', requireUser, async (request, response, next) => {
+    try {
+        const { routineActivityId } = request.params;
+      if(!await canEditRoutineActivity(routineActivityId, request.user.id)) {
+        next({
+            name: "UnauthorizedUser", 
+            message: "You cannot edit this routine_activity which is not yours"
+        });
+      } else {
+        const deletedRoutineActivity = await destroyRoutineActivity(routineActivityId)
+        response.send({success: true, ...deletedRoutineActivity});
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
 
 module.exports = routine_activities;

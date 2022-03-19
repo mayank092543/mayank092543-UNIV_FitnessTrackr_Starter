@@ -21,11 +21,11 @@ const {
     getAllRoutines,
     updateRoutine,
     getRoutineById,
-    destroyRoutine
-//     getAllPublicRoutines,
-//     getAllRoutinesByUser,
-//     getPublicRoutinesByUser,
-//     getPublicRoutinesByActivity
+    destroyRoutine,
+    getAllPublicRoutines,
+    getAllRoutinesByUser,
+    getPublicRoutinesByUser,
+    getPublicRoutinesByActivity
 } = require("./routines")
 
 const {

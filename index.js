@@ -4,7 +4,7 @@
 require("dotenv").config();
 
 // Create a constant variable, PORT, based on what's in process.env.PORT or fallback to 3000
-const PORT = process.env.PORT || 3000;
+const {PORT = 3000} = process.env;
 
 // Import express, and create a server
 const express = require("express");
@@ -30,6 +30,8 @@ server.use("/api", require("./api"));
 
 // Import the client from your db/index.js
 const { client } = require("./db");
+client.connect();
+
 
 // Create custom 404 handler that sets the status code to 404.
 server.use("*", (req, res, next) => {
@@ -47,6 +49,5 @@ server.use((error, req, res, next) => {
 // Start the server listening on port PORT
 // On success, connect to the database
 server.listen(PORT, () => {
-    //   client.connect();
     console.log("Listening on port:", PORT);
 });
