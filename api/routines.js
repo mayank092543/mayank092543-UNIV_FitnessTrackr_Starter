@@ -1,88 +1,120 @@
 const express = require("express");
 const routinesRouter = express.Router();
 
-const { requireUser } = require("./utils");
-const { getAllPublicRoutines, createRoutine, getRoutinebyId, updateRoutine, destroyRoutine, getRoutineActivitiesByRoutine } = require("../db");
+const { requireUser, requiredNotSent} = require("./utils");
+const { getAllPublicRoutines, createRoutine, getRoutineById, updateRoutine, destroyRoutine } = require("../db/routines");
+const {getRoutineActivitiesByRoutine, addActivityToRoutine } = require("../db/routine_activities");
 
 routinesRouter.get("/", async(request, response, next) => {
     try {
         const allPublicRoutinesWithactivities = await getAllPublicRoutines();
         response.send(allPublicRoutinesWithactivities);
 
-    } catch ({ name, message }) {
-        next({ name, message });
+    } catch (error) {
+        throw (error);
     }
 });
 
-routinesRouter.post("/routines", requireUser, async(request, response, next) => {
+routinesRouter.post("/", requireUser, async(request, response, next) => {
     const { name, goal, isPublic } = request.body;
-    const creatorId = request.user.id; // check with chai and db is not right? has name twice
+    const creatorId = request.user.id; 
 
     try {
         const createdRoutine = await createRoutine({ creatorId, isPublic, name, goal });
         response.send(createdRoutine);
 
-    } catch({ name, message }) {
-        next({ name, message });
+    } catch(error) {
+        throw (error);
     }
 });
 
-routinesRouter.patch("/routines/:routineId", requireUser, async(request, response, next) => {
-    const { routineId } = request.params;
-    const { isPublic, name, goal } = request.body;
+// ** the logged in user should be the owner of the modified object
 
-    try { // ** the logged in user should be the owner of the modified object
-        const originalRoutines = await getRoutinebyId(routineId)
-
-        if (originalRoutines.id === request.user.id) { //originalRoutines.id?
-            const updatedRoutine = await updateRoutine({ routineId, isPublic, name, goal}) // do i need to justify isPublic status?
-            response.send(updatedRoutine);
-
-        } else {
-            next({
-                name: "UnauthorizedUserError",
-                message: "You cannot update a post which is not yours"
-            });
-        }
-    } catch ({ name, message }){
-        next({ name, message });
-    }
-});
-
-routinesRouter.delete("/routines/:routineId", requireUser, async(request, response, next) => {
-    const{ routineId } = request.params;
-
-    try { // No idea?????
-        const deleteRoutine = await getRoutinebyId(routineId)
-
-        if (deleteRoutine && deleteRoutine.id === request.user.id) { //routine.id?
-            const deleteRoutine = await destroyRoutine(routineId)
-
-            const queriedRoutineActivities = await getRoutineActivitiesByRoutine(routineId)
-        }
-    } catch({ name, message }) {
-        next({ name, message })
-    }
-});
-
-routinesRouter.post("/routines/:routineId/activities", async(request, response, next) => {
-    const { routineId } = request.params;
-    const{ activityId, count, duration } = request.body;
-
+routinesRouter.patch('/:routineId', requireUser, requiredNotSent({requiredParams: ['name', 'goal', 'isPublic'], atLeastOne: true}), async (request, response, next) => {
     try {
-        // Prevent duplication on routineId, activityId
-         if (routineId !== activityId) {
-            const attachActivityToRoutine = await addActivityToRoutine({ routineId, activityId, count, duration })
-            response.send(attachActivityToRoutine)
+      const {routineId} = request.params;
+      const {isPublic, name, goal} = request.body;
+      const getRoutine = await getRoutineById(routineId);
+      if(!getRoutine) {
+        next({
+          name: 'NotFound',
+          message: `No routine by this ID ${routineId}`
+        })
+      } else if(getRoutine.creatorId !== request.user.id) {
+        next({
+          name: "WrongUserError",
+          message: "You can not update routine which is not yours"
+        });
+      } else {
+        const updatedRoutine = await updateRoutine({id: routineId, isPublic, name, goal});
+        if(updatedRoutine) {
+          response.send(updatedRoutine);
         } else {
-            next({
-                name: "DuplicationError",
-                message: "RoutineId and ActiviyId can't be duplicate"
-            });
+          next({
+            name: 'FailedToUpdate',
+            message: 'Error updating your routine'
+          })
         }
-    } catch ({ name, message }) {
-        next({ name, message });
+      }
+    } catch (error) {
+      next(error);
     }
-})
+  });
+  
+  
+  routinesRouter.delete('/:routineId', requireUser, async (request, response, next) => {
+    try {
+      const {routineId} = request.params;
+      const getRoutine = await getRoutineById(routineId);
+      if(!getRoutine) {
+        next({
+          name: 'NotFound',
+          message: `No routine by this ID ${routineId}`
+        })
+      } else if( getRoutine.creatorId !== request.user.id) {
+        next({
+          name: "WrongUserError",
+          message: "You can get routine which is not yours"
+        });
+      } else {
+        const deletedRoutine = await destroyRoutine(routineId)
+        response.send({success: true, ...deletedRoutine});
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+
+routinesRouter.post("/:routineId/activities", requiredNotSent({requiredParams: ['activityId', 'count', 'duration']}), async(request, response, next) => {
+    
+    try {
+        const {activityId, count, duration} = request.body;
+        const {routineId} = request.params;
+
+        const foundRoutineActivities = await getRoutineActivitiesByRoutine({id: routineId});
+        const existingRoutineActivities = foundRoutineActivities && foundRoutineActivities.filter(routineActivity => routineActivity.activityId === activityId);
+
+        if(existingRoutineActivities && existingRoutineActivities.length) {
+          next({
+            name: 'RoutineActivityExistsError',
+            message: "A routine_activity by that routineId and activityId combination already exists"
+          });
+
+        } else {
+          const attachActivityToRoutine = await addActivityToRoutine({ routineId, activityId, count, duration });
+          if(attachActivityToRoutine) {
+            response.send(attachActivityToRoutine);
+
+          } else {
+            next({
+              name: 'FailedToCreate',
+              message: "There was an error adding activity"
+            })
+          }
+        }
+     } catch (error) {
+        throw (error);
+    }
+});
 
 module.exports = routinesRouter;

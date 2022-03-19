@@ -1,96 +1,207 @@
-const { Client } = require('pg');
+const client = require('./client');
 
-const CONNECTION_STRING = process.env.DATABASE_URL || 'postgres://localhost:5432/fitness-dev';
-const routineClient = new Client(CONNECTION_STRING);
+const { attachActivitiesToRoutines } = require("./activities");
+const { getUserByUsername } = require("./users");
+const util = require("./util");
 
-// getRoutineById
-// getRoutineById(id)
-// return the routine
+async function getRoutineById(id) {
+    try {
+      const { rows: [ routine ] } = await client.query(`
+        SELECT * 
+        FROM routines
+        WHERE id = $1
+      `, [id]);
+
+      return routine;
+    } catch (error) {
+      throw error;
+    }
+  }
 
 
-// getRoutinesWithoutActivities
-// select and return an array of all routines
 async function getRoutinesWithoutActivities() {
     try {
-        const { rows: [routine] } = await routineClient.query(`
+        const { rows } = await client.query(`
         SELECT *
         FROM routines
-        WHERE activityId=null
       `);
 
-        if (!routine) {
-            return null
-        }
-
-        return routine;
+        return rows;
     } catch (error) {
         throw error;
     }
 }
 
-
-// getAllRoutines
-// select and return an array of all routines, include their activities
-
-
-
-// getAllPublicRoutines
-// select and return an array of public routines, include their activities
-
-
-
-// getAllRoutinesByUser({ username })
-// select and return an array of all routines made by user, include their activities
-
-
-
-// getPublicRoutinesByUser({ username })
-// select and return an array of public routines made by user, include their activities
-
-
-
-// getPublicRoutinesByActivity({ id })
-// select and return an array of public routines which have a specific activityId in their routine_activities join, include their activities
-
-
-
-// createRoutine({ creatorId, isPublic, name, goal })
-// create and return the new routine
-async function createRoutine({
-    creatorId,
-    isPublic,
-    name,
-    goal
-}) {
+async function getAllRoutines() {
     try {
-        const { rows: [routine] } = await routineClient.query(`
-        INSERT INTO routines(creatorId, isPublic, name, goal) 
-        VALUES($1, $2, $3, $4) 
-        ON CONFLICT (creatorId) DO NOTHING 
-        RETURNING *;
-      `, [creatorId, isPublic, name, goal]);
+        const { rows: routines } = await client.query(`
+        SELECT *, users.username AS "creatorName"
+        FROM routines
+        JOIN users ON routines."creatorId" = users.id
+        `);
 
-        return routine;
+        return attachActivitiesToRoutines(routines);
     } catch (error) {
         throw error;
     }
 }
 
+async function getAllPublicRoutines() {
+    try {
+      const { rows: routines } = await client.query(`
+      SELECT routines.*, users.username AS "creatorName"
+      FROM routines
+      JOIN users ON routines."creatorId" = users.id
+      WHERE "isPublic" = true
+      `);
+      return attachActivitiesToRoutines(routines);
+    } catch (error) {
+      throw error
+    }
+  }
 
-// updateRoutine({ id, isPublic, name, goal })
-// Find the routine with id equal to the passed in id
-// Don't update the routine id, but do update the isPublic status, name, or goal, as necessary
-// Return the updated routine
+
+
+// // getAllRoutinesByUser({ username })
+// // select and return an array of all routines made by user, include their activities
+
+async function getAllRoutinesByUser({username}) {
+    try {
+      const user = await getUserByUsername(username);
+      const { rows: routines } = await client.query(`
+      SELECT routines.*, users.username AS "creatorName"
+      FROM routines
+      JOIN users ON routines."creatorId" = users.id 
+      WHERE "creatorId" = $1
+      `, [user.id]);
+
+      return attachActivitiesToRoutines(routines);
+    } catch (error) {
+      throw error
+    }
+  }
 
 
 
-// destroyRoutine(id)
-// remove routine from database
-// Make sure to delete all the routine_activities whose routine is the one being deleted.
+// // getPublicRoutinesByUser({ username })
+// // select and return an array of public routines made by user, include their activities
+
+async function getPublicRoutinesByUser({username}) {
+  try {
+    const user = await getUserByUsername(username);
+    const { rows: routines } = await client.query(`
+    SELECT routines.*, users.username AS "creatorName"
+    FROM routines
+    JOIN users ON routines."creatorId" = users.id 
+    WHERE "creatorId" = $1
+    AND "isPublic" = true
+    `, [user.id]);
+
+    return attachActivitiesToRoutines(routines);
+  } catch (error) {
+    throw error
+  }
+}
+
+// // getPublicRoutinesByActivity({ id })
+// // select and return an array of public routines which have a specific activityId in their routine_activities join, include their activities
+
+async function getPublicRoutinesByActivity({id}) {
+    try {
+      const { rows: routines } = await client.query(`
+        SELECT routines.*, users.username AS "creatorName"
+        FROM routines
+        JOIN users ON routines."creatorId" = users.id
+        JOIN routine_activities ON routine_activities."routineId" = routines.id
+        WHERE routines."isPublic" = true
+        AND routine_activities."activityId" = $1;
+      `, [id]);
+
+      return attachActivitiesToRoutines(routines);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async function createRoutine({
+      creatorId,
+      isPublic,
+      name, 
+      goal}) {
+    try {
+      const { rows: [ routine ] } = await client.query(`
+          INSERT INTO routines ("creatorId", "isPublic", "name", "goal")
+          VALUES($1, $2, $3, $4)
+          RETURNING *;
+      `, [creatorId, isPublic, name, goal]);
+  
+      return routine;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+
+  async function updateRoutine({id, ...fields}) {
+    try {
+      const toUpdate = {}
+      for(let column in fields) {
+        if(fields[column] !== undefined) toUpdate[column] = fields[column];
+      }
+      let routine;
+      if (util.dbFields(fields).insert.length > 0) {
+        const {rows} = await client.query(`
+            UPDATE routines 
+            SET ${ util.dbFields(toUpdate).insert }
+            WHERE id=${ id }
+            RETURNING *;
+        `, Object.values(toUpdate));
+        routine = rows[0];
+        return routine;
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
+
+
+// // destroyRoutine(id)
+// // remove routine from database
+// // Make sure to delete all the routine_activities whose routine is the one being deleted.
+
+async function destroyRoutine(id) {
+    try {
+        const { rows: [ deletedRoutine ] } = await client.query(`
+        DELETE 
+        FROM routines
+        WHERE id=$1
+        RETURNING *;
+        `, [id])
+
+        const { rows } = await client.query(`
+        DELETE 
+        FROM routine_activities
+        WHERE "routineId"=$1
+        `, [id])
+
+        return deletedRoutine
+    } catch (error) {
+        throw error
+    }
+}
 
 
 module.exports = {
-    routineClient,
     createRoutine,
-    getRoutinesWithoutActivities
+    getRoutinesWithoutActivities,
+    getRoutineById,
+    updateRoutine,
+    destroyRoutine,
+    getAllRoutines,
+    getAllPublicRoutines,
+    getAllRoutinesByUser,
+    getPublicRoutinesByActivity,
+    getPublicRoutinesByUser
+
 }

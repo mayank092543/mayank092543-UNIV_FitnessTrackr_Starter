@@ -1,51 +1,54 @@
 const express = require("express");
 const routine_activities = express.Router();
 
-const{ requireUser } = require("./utils");
-const { getRoutineActivityById, updateRoutineActivity, destroyRoutineActivity } = require("../db");
+const { requireUser, requiredNotSent } = require("./utils");
+const { getRoutineActivityById, updateRoutineActivity, destroyRoutineActivity, canEditRoutineActivity } = require("../db");
+const { getRoutineById } = require("../db/routines");
 
-
-routine_activities.patch("/routine_activities/:routineActivityId", requireUser, async(request, response, next) => {
-    const { routineActivityId } = request.params;
-    const { count, duration } = request.body;
-
-    // this has ** the logged in user should be the owner of the modified object
+// this has ** the logged in user should be the owner of the modified object
+routine_activities.patch('/:routineActivityId', requireUser, requiredNotSent({requiredParams: ['count', 'duration'], atLeastOne: true}), async (request, response, next) => {
     try {
-    const originalRoutineActivity = await getRoutineActivityById(routineActivityId)
-    if (originalRoutineActivity.id === request.user.id){
-        const updatedRoutineActivity = await updateRoutineActivity({routineActivityId, count, duration })
-        response.send(updatedRoutineActivity);
-    } else {
-        next ({
-            name: "UnauthorizedUserError",
-            message: "You can't update routine activity which is not yours"
+      const {count, duration} = request.body;
+      const {routineActivityId} = request.params;
+      
+      const getRoutineActivity = await getRoutineActivityById(routineActivityId);
+      if(!getRoutineActivity) {
+        next({
+          name: 'NotFound',
+          message: `No routine_activity found by this ID ${routineActivityId}`
         })
-    }
-} catch ({ name, message }) {
-    next({ name, message })
-}
-
-});
-
-routine_activities.delete("/routine_activities/:routineActivityId", requireUser, async(request, response, next) => {
-    const { routineActivityId } = request.params;
-
-    try {
-        const original_Routine_Activity = await getRoutineActivityById(routineActivityId);
-        if (original_Routine_Activity.id === request.user.id) {
-            const deletedRoutineActivity = await destroyRoutineActivity(routineActivityId)
-            response.send(deletedRoutineActivity)
-        } else {
+      } else {
+        if(!await canEditRoutineActivity(routineActivityId, request.user.id)) {
             next({
-                name: "UnauthorizedUserError",
-                message: "You can't delete routine activity which is not yours"
-            })
+              name: "UnauthorizedUser", 
+              message: "You cannot edit this routine_activity which is not yours"
+            });
+        } else {
+          const updatedRoutineActivity = await updateRoutineActivity({id: routineActivityId, count, duration})
+          response.send(updatedRoutineActivity);
         }
-
-    } catch ({ name, message }) {
-        next({ name, message });
+      }
+    } catch (error) {
+      next(error);
     }
-})
-
+  });
+  
+  
+  routine_activities.delete('/:routineActivityId', requireUser, async (request, response, next) => {
+    try {
+        const { routineActivityId } = request.params;
+      if(!await canEditRoutineActivity(routineActivityId, request.user.id)) {
+        next({
+            name: "UnauthorizedUser", 
+            message: "You cannot edit this routine_activity which is not yours"
+        });
+      } else {
+        const deletedRoutineActivity = await destroyRoutineActivity(routineActivityId)
+        response.send({success: true, ...deletedRoutineActivity});
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
 
 module.exports = routine_activities;

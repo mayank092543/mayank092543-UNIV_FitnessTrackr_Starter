@@ -2,99 +2,87 @@ const express = require("express");
 const usersRouter = express.Router();
 
 const bcrypt = require("bcrypt");
-const { getUserByUsername, createUser, getUserById, getPublicRoutinesByUser } = require("../db");
 const jwt = require("jsonwebtoken");
+const { JWT_SECRET = "neverTell" } = process.env;
+
+const { getUserByUsername, getUser, createUser, getUserById, getPublicRoutinesByUser } = require("../db");
+const { requireUser } = require("./utils");
+
 
 usersRouter.post("/register", async(request, response, next) => {
-    const { username, password } = request.body;
 
-        if (password.length < 8) {
-            next ({
-                name: "PasswordError",
-                message: "Password too shot"
-            });
-        }
     try {
-        const _user = await getUserByUsername( username );
+        const { username, password } = request.body;
+        const _user = await getUserByUsername(username);
+        if (_user) {
+          next({
+            name: 'UserExistsError',
+            message: 'A user by that username already exists'
+          });
+        } else if (password.length < 8) {
+          next({
+            name: 'PasswordLengthError',
+            message: 'Password Too Short!'
+          });
 
-        if(_user) {
+        } else {
+          const user = await createUser({ username, password });
+          if (!user) {
             next({
-                name: "UserExistError",
-                message: "A user by that username already exists"
+              name: 'UserCreationError',
+              message: 'There was a problem registering you. Please try again.',
             });
+          } else {
+            const token = jwt.sign({id: user.id, username: user.username}, JWT_SECRET);
+            response.send({ user, message: "you're signed up!", token });
+          }
         }
-
-        const SALT_COUNT = 10;
-        const hashedPwd = await bcrypt.hash(password, SALT_COUNT);
-
-        const newUser = await createUser({ username, hashedPwd })
-
-        response.send({
-            message: "Thankyou for signing up"
-        });
-
-    } catch (error) {
-        next(error);
-    }
-    
-})
+      } catch (error) {
+        next(error)
+      }
+    })
 
 usersRouter.post("/login", async(request, response, next) => {
     const { username, password } = request.body;
 
+    if (!username || !password) {
+        next({
+          name: 'MissingCredentialsError',
+          message: 'Please supply both a username and password'
+        });
+      }
+
     try {
-        const user = await getUserByUsername(username);
+        const user = await getUser({username, password});
 
-        const isValid = await bcrypt.compare(password, user.password);
+        // const isValid = await bcrypt.compare(password, user.password);
 
-        if (user && isValid) {
-            const token = jwt.sign({ id: user.id, username }, process.env.JWT_SECRET );
+        if (user) {
+            const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET );
 
-            response.send({token: token});
+            response.send({ user, message: "You are logged in!", token: token});
+        } else {
+            next({
+                name: "MissingCredentialsError",
+                message: "Please supply both a username and password"
+            });
         }
     } catch (error) {
         next(error);
     }
 });
 
-usersRouter.get("/me", async(request, response, next) => {
-    const prefix = "Bearer";
-    const auth = request.header ("Authorization");
-
-    if (!auth) {
-        next({ // Is this right??
-            name: "AuthorizationHeaderError",
-            message: "Authorization is missing in headers"
-        });
-    } else if (auth.startWith(prefix)) {
-        const token = auth.slice(prefix.length);
-
-        try {
-            const { id } = jwt.verify(token, JWT_SECRET);
-            
-            if(id) {
-                const userInfo = await getUserById(id);
-                response.send(userInfo); // returning user's Data
-                next();
-            } else {
-            next ({
-                name: "AuthorizationHeaderError",
-                message: "Authorization token malformed"
-            });
-        }
-    } catch ({ name, message}) {
-        next({ name, message });
-    }
+usersRouter.get("/me", requireUser, async(request, response, next) => {
     
-    } else {
-        next ({
-            name: "AuthorizationHeaderError",
-            message: `Authorization token must start with ${prefix}`
-        });
+    try {
+        response.send(request.user);
+        
+    } catch (error) {
+        next(error)
     }
 });
 
-usersRouter.get("/users/:username/routines", async(request, response, next) => {
+usersRouter.get("/:username/routines", async(request, response, next) => {
     const { username } = request.params;
 
     const userRoutines = await getPublicRoutinesByUser({ username });
